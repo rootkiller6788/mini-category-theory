@@ -1,0 +1,28 @@
+/-
+MiniMorphismSystem — Morphism system package
+Aggregates all submodules.
+-/
+
+import MiniMorphismSystem.Core.Basic
+import MiniMorphismSystem.Core.Objects
+import MiniMorphismSystem.Core.Laws
+import MiniMorphismSystem.Morphisms.Hom
+import MiniMorphismSystem.Morphisms.Iso
+import MiniMorphismSystem.Morphisms.Equivalence
+import MiniMorphismSystem.Constructions.Products
+import MiniMorphismSystem.Constructions.Universal
+import MiniMorphismSystem.Constructions.Subobjects
+import MiniMorphismSystem.Constructions.Quotients
+import MiniMorphismSystem.Properties.Invariants
+import MiniMorphismSystem.Properties.Preservation
+import MiniMorphismSystem.Properties.ClassificationData
+import MiniMorphismSystem.Theorems.Basic
+import MiniMorphismSystem.Theorems.UniversalProperties
+import MiniMorphismSystem.Theorems.Classification
+import MiniMorphismSystem.Theorems.Main
+import MiniMorphismSystem.Examples.Standard
+import MiniMorphismSystem.Examples.Counterexamples
+import MiniMorphismSystem.Bridges.ToAlgebra
+import MiniMorphismSystem.Bridges.ToTopology
+import MiniMorphismSystem.Bridges.ToGeometry
+import MiniMorphismSystem.Bridges.ToComputation

@@ -1,0 +1,30 @@
+/-
+# MiniNaturalTransformation
+
+Root aggregator for the MiniNaturalTransformation library.
+Imports all 23 submodules.
+-/
+
+import MiniNaturalTransformation.Core.Basic
+import MiniNaturalTransformation.Core.Objects
+import MiniNaturalTransformation.Core.Laws
+import MiniNaturalTransformation.Morphisms.Hom
+import MiniNaturalTransformation.Morphisms.Iso
+import MiniNaturalTransformation.Morphisms.Equivalence
+import MiniNaturalTransformation.Constructions.Products
+import MiniNaturalTransformation.Constructions.Universal
+import MiniNaturalTransformation.Constructions.Subobjects
+import MiniNaturalTransformation.Constructions.Quotients
+import MiniNaturalTransformation.Properties.Invariants
+import MiniNaturalTransformation.Properties.Preservation
+import MiniNaturalTransformation.Properties.ClassificationData
+import MiniNaturalTransformation.Theorems.Basic
+import MiniNaturalTransformation.Theorems.UniversalProperties
+import MiniNaturalTransformation.Theorems.Classification
+import MiniNaturalTransformation.Theorems.Main
+import MiniNaturalTransformation.Examples.Standard
+import MiniNaturalTransformation.Examples.Counterexamples
+import MiniNaturalTransformation.Bridges.ToAlgebra
+import MiniNaturalTransformation.Bridges.ToTopology
+import MiniNaturalTransformation.Bridges.ToGeometry
+import MiniNaturalTransformation.Bridges.ToComputation
