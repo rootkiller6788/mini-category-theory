@@ -7,5 +7,6 @@ package «mini-category-core» where
 @[default_target]
 lean_lib «MiniCategoryCore» where
   roots := #[`MiniCategoryCore]
+  defaultFacets := #[ModuleFacet.oleans]
 
 require «mini-object-kernel» from "../../0. mini-math-kernel/mini-object-kernel"

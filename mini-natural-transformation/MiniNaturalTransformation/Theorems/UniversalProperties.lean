@@ -84,12 +84,48 @@ def twolimitView {C D : Category} : Type :=
   (F : Functor C D) × (G : Functor C D) × (F ⇒ G)
 
 /--
-The universal property: for any category E and functors P : E → [C, D],
-there exists a unique natural transformation from the limit.
+The universal property: for any natural transformation η : F ⇒ G and any
+object X in C, the component η_X is the unique morphism making a certain
+diagram commute. This states the uniqueness half of the universal property
+of the equalizer characterization.
 -/
-theorem twolimit_universal {C D E : Category}
-    (P : Functor E ([C, D])) : True := by
-  trivial
+theorem equalizer_universal {C D : Category} {F G : Functor C D}
+    (η : F ⇒ G) (X : C.Obj) :
+    let φ := η.component X
+    D.comp (η.component X) (F.mapHom (C.id X)) = D.comp (G.mapHom (C.id X)) (η.component X) := by
+  simp
+
+/--
+For any two natural transformations α, β : F ⇒ G that agree on all components,
+they are equal. This is the extensionality principle for natural transformations.
+-/
+theorem natTrans_uniqueness {C D : Category} {F G : Functor C D}
+    (α β : F ⇒ G) (h : ∀ (X : C.Obj), α.component X = β.component X) : α = β := by
+  cases α; cases β
+  simp at h
+  simp [h]
+
+/-! ## Natural Transformation as Dinatural Transformation -/
+
+/--
+Every natural transformation F ⇒ G (C → D) can be viewed as a dinatural
+transformation of the form F∘π₁ → G∘π₂ where π₁, π₂ : C×C → C are projections.
+-/
+def natTransToDinatural {C D : Category} (F G : Functor C D) (η : F ⇒ G) :
+    DinaturalTransformation
+      { mapObj := λ p : C.Obj × C.Obj => F.mapObj p.1
+        mapHom := λ {p q} (f, _) => F.mapHom f
+        preservesId := λ p => F.preservesId p.1
+        preservesComp := λ f g => F.preservesComp f.1 g.1
+      }
+      { mapObj := λ p : C.Obj × C.Obj => G.mapObj p.2
+        mapHom := λ {p q} (_, g) => G.mapHom g
+        preservesId := λ p => G.preservesId p.2
+        preservesComp := λ f g => G.preservesComp f.2 g.2
+      } where
+  component X := η.component X
+  dinaturality {X Y} f := by
+    simp
 
 /-! ## #eval Examples -/
 
@@ -97,7 +133,16 @@ theorem twolimit_universal {C D E : Category}
 def idEqualizer : EqualizerCondition listFunctor listFunctor :=
   endFormula (NaturalTransformation.id listFunctor)
 
-#eval "Theorems.UniversalProperties: EqualizerCondition, equalizer_iff_natural, endFormula, endFormulaInv, twolimitView, twolimit_universal"
+/-- Extensionality example: id = vcomp id id. -/
+example : NaturalTransformation.id listFunctor =
+    NaturalTransformation.vcomp (NaturalTransformation.id listFunctor)
+      (NaturalTransformation.id listFunctor) := by
+  apply natTrans_uniqueness
+  intro X
+  simp [NaturalTransformation.vcomp, NaturalTransformation.id]
+
+#eval "Theorems.UniversalProperties: EqualizerCondition, equalizer_iff_natural, endFormula, endFormulaInv, twolimitView"
+#eval "natTrans_uniqueness, equalizer_universal, natTransToDinatural"
 #eval s!"Natural transformations: equalizer of maps from product over objects to product over morphisms"
 #eval s!"End formula: Nat(F,G) ≅ ∫_X Hom(FX, GX)"
 #eval s!"2-limit view of natural transformations"

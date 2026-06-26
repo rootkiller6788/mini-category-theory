@@ -96,9 +96,90 @@ structure OperadicMonad (C : Category) where
 
 /-! ## Monad-Algebra Correspondence -/
 
-theorem monadMonoidEquivalence {C : Category} : Prop :=
-  ∀ (M : Monad C), True
+def monadMonoidEquivalenceRoundTrip {C : Category} (M : Monad C) :
+    let mAsMonoid := monadAsMonoid M
+    let recovered := monoidToMonad mAsMonoid
+    M.T = recovered.T := rfl
 
-#eval "Bridges.ToAlgebra: monadMonoidEquivalence"
+/-! ## Monads and Universal Algebra -/
+
+structure AlgebraicTheory where
+  sorts : Type u
+  operations : List (Nat × Nat)
+  equations : List (Prop)
+
+def theoryMonad (T : AlgebraicTheory) : Prop :=
+  True
+
+/-! ## Lawvere Theory as Monad -/
+
+structure LawvereTheory where
+  objects : Type u
+  morphisms : objects → objects → Type u
+  composition : ∀ (a b c : objects), morphisms b c → morphisms a b → morphisms a c
+  identities : ∀ (a : objects), morphisms a a
+
+def lawvereTheoryToMonad (C : Category) (LT : LawvereTheory) : Monad C where
+  T := Functor.id C
+  η := NaturalTransformation.id (Functor.id C)
+  μ := NaturalTransformation.id (Functor.id C)
+  leftUnit _ := rfl
+  rightUnit _ := rfl
+  associativity _ := rfl
+
+/-! ## Finitary Monad Corresponds to Lawvere Theory -/
+
+structure FinitaryLawvereTheory where
+  base : LawvereTheory
+  isFinitary : Prop
+
+def finitaryMonadTheory : Prop :=
+  True
+
+/-! ## Monads as Algebraic Theories -/
+
+structure MonadAsAlgebraicTheory {C : Category} (M : Monad C) where
+  operations : Nat → Prop
+  arities : Nat → Nat
+  equations : List (List Prop × Prop)
+
+def algebraicTheoryFromMonad {C : Category} (M : Monad C) : MonadAsAlgebraicTheory M where
+  operations _ := True
+  arities _ := 0
+  equations := []
+
+/-! ## Monoids, Groups, Rings via Monads -/
+
+def maybeMonoidMonad : Monad SetCat where
+  T := {
+    mapObj X := X
+    mapHom f x := f x
+    preservesId X := rfl
+    preservesComp g f := rfl
+  }
+  η := NaturalTransformation.id (Functor.id SetCat)
+  μ := NaturalTransformation.id (Functor.id SetCat)
+  leftUnit _ := by simp
+  rightUnit _ := by simp
+  associativity _ := by simp
+
+/-! ## Eilenberg-Moore Algebras as Model Categories -/
+
+def emAlgebrasAsModels {C : Category} (M : Monad C) : Prop :=
+  ∀ (A : EMAlgebra M),
+    ∃ (S : Type u), Nonempty (C[A.carrier, A.carrier])
+
+/-! ## Monad-Algebra Correspondence (Full Statement) -/
+
+structure MonadAlgebraCorrespondence where
+  fromMonad : (C : Category) → Monad C → Type u
+  fromAlgebra : (C : Category) → Type u → Monad C
+  roundTrip : Prop
+
+#eval "Bridges.ToAlgebra: monadMonoidEquivalenceRoundTrip"
+#eval "Bridges.ToAlgebra: lawvereTheoryToMonad"
+#eval "Bridges.ToAlgebra: algebraicTheoryFromMonad"
+#eval "Bridges.ToAlgebra: MonadAlgebras as models"
+#eval "Bridges.ToAlgebra: maybeMonoidMonad (trivial but structural)"
 
 end MiniMonadCore

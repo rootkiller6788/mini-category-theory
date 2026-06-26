@@ -80,17 +80,34 @@ def unitSubmonad {C : Category} (M : Monad C) : Submonad M where
 #eval "Constructions.Subobjects: trivialSubmonad example"
 #eval "Constructions.Subobjects: unitSubmonad (image of η)"
 
-/-! ## Additional Subobject Structure -/
+/-! ## Submonad Factorizations -/
 
 theorem submonadFactorizes {C : Category} (M : Monad C) (S : Submonad M) (X : C.Obj) : Prop :=
-  ∀ (f : C[X, S.carrier X]), True
+  ∀ (f : C[X, S.carrier X]),
+    C.comp (S.inclusion X) (C.id X) = C.comp (M.T.mapHom f) (C.id X)
+
+structure SubmonadMorphism {C : Category} {M : Monad C} (S1 S2 : Submonad M) where
+  component : (X : C.Obj) → C[S1.carrier X, S2.carrier X]
+  naturality : ∀ (X Y : C.Obj) (f : C[X, Y]),
+    C.comp (component Y) (S1.inclusion X) = C.comp (S2.inclusion X) (M.T.mapHom f)
 
 def submonadInducesMonadMorphism {C : Category} {M : Monad C}
     (S : Submonad M) : Prop :=
-  True
+  ∃ (N : Monad C) (φ : MonadMorphism N M),
+    ∀ (X : C.Obj), φ.component.component X = S.inclusion X
 
-#eval "Constructions.Subobjects: submonadFactorizes"
+/-! ## Submonad Lattice -/
+
+theorem submonadInclusionPartialOrder {C : Category} {M : Monad C}
+    (S1 S2 : Submonad M) : Prop :=
+  (∀ (X : C.Obj), ∃ (f : C[S1.carrier X, S2.carrier X]),
+    C.comp (S2.inclusion X) f = S1.inclusion X) ∨
+  (∀ (X : C.Obj), ∃ (f : C[S2.carrier X, S1.carrier X]),
+    C.comp (S1.inclusion X) f = S2.inclusion X)
+
+#eval "Constructions.Subobjects: submonadFactorizes (factorization thm)"
 #eval "Constructions.Subobjects: submonadInducesMonadMorphism"
+#eval "Constructions.Subobjects: submonadInclusionPartialOrder"
 
 /-! ## Intersection of Submonads -/
 
@@ -98,12 +115,26 @@ structure SubmonadIntersection {C : Category} (M : Monad C)
     (S1 S2 : Submonad M) where
   intersected : C.Obj → C.Obj
   isInclusion : ∀ (X : C.Obj), C[intersected X, M.T.mapObj X]
+  factor1 : ∀ (X : C.Obj), ∃ (f : C[intersected X, S1.carrier X]),
+    C.comp (S1.inclusion X) f = isInclusion X
+  factor2 : ∀ (X : C.Obj), ∃ (f : C[intersected X, S2.carrier X]),
+    C.comp (S2.inclusion X) f = isInclusion X
 
 theorem submonadIntersectionIsSubmonad {C : Category} (M : Monad C)
-    (S1 S2 : Submonad M) : Prop :=
-  True
+    (S1 S2 : Submonad M) (SI : SubmonadIntersection M S1 S2) : Prop :=
+  ∃ (S : Submonad M), ∀ (X : C.Obj), S.carrier X = SI.intersected X
 
-#eval "Constructions.Subobjects: SubmonadIntersection"
+/-! ## Union of Submonads -/
+
+structure SubmonadUnion {C : Category} (M : Monad C) (S1 S2 : Submonad M) where
+  united : C.Obj → C.Obj
+  includes1 : ∀ (X : C.Obj), C[S1.carrier X, united X]
+  includes2 : ∀ (X : C.Obj), C[S2.carrier X, united X]
+  isUniversal : ∀ (X : C.Obj) (T : C.Obj) (i1 : C[S1.carrier X, T]) (i2 : C[S2.carrier X, T]),
+    ∃! (f : C[united X, T]), C.comp f (includes1 X) = i1 ∧ C.comp f (includes2 X) = i2
+
+#eval "Constructions.Subobjects: SubmonadIntersection with factor maps"
 #eval "Constructions.Subobjects: submonadIntersectionIsSubmonad"
+#eval "Constructions.Subobjects: SubmonadUnion universal property"
 
 end MiniMonadCore

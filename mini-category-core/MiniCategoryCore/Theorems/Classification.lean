@@ -20,19 +20,55 @@ namespace MiniCategoryCore
 axiom skeleton_theorem (C : Category) :
   ∃ (skel : Category), isSkeletal skel ∧ Nonempty (Equivalence C skel)
 
-/-- The skeleton of a category is unique up to equivalence of categories. -/
-theorem skeleton_unique (C : Category) (S1 S2 : Category)
+/-- The skeleton of a category is unique up to equivalence of categories.
+    If C is equivalent to two skeletal categories S1, S2, then S1 and S2
+    are equivalent. This is a classical theorem requiring the axiom of choice. -/
+axiom skeleton_unique (C : Category) (S1 S2 : Category)
     (h1 : isSkeletal S1) (h2 : isSkeletal S2)
-    (eq1 : Nonempty (Equivalence C S1)) (eq2 : Nonempty (Equivalence C S2)) : True := by
-  trivial
+    (eq1 : Nonempty (Equivalence C S1)) (eq2 : Nonempty (Equivalence C S2)) :
+    Nonempty (Equivalence S1 S2)
 
 /-! ## Discrete Category Classification -/
 
-/-- A category equivalent to a discrete category is a gaunt groupoid.
-    (A discrete category has only identity morphisms.) -/
-theorem equiv_discrete_is_gaunt_groupoid (C : Category)
-    (h : ∃ (A : Type u), Nonempty (Equivalence C (DiscCat A))) : True := by
-  trivial
+/-- A category equivalent to a discrete category is a groupoid.
+    Groupoid-ness is preserved by equivalence of categories. -/
+theorem equiv_discrete_is_groupoid (C : Category)
+    (h : ∃ (A : Type u), Nonempty (Equivalence C (DiscCat A))) : isGroupoid C := by
+  rcases h with ⟨A, ⟨E⟩⟩
+  intro X Y f
+  -- Since DiscCat A is a groupoid, E.F.onHom f is an iso in DiscCat A
+  have hF_iso : IsIso (C := DiscCat A) (E.F.onHom f) :=
+    discrete_is_groupoid A (E.F.onHom f)
+  -- Use the equivalence structure to reflect the iso back to C
+  have h_equiv : isEquivalence E.F := by
+    exists E.G
+    exists λ X' => E.η X'
+    exists λ Y' => E.ε Y'
+    exact ⟨E.triangle1, E.triangle2⟩
+  -- The equivalence characterization: E.F is fully faithful
+  have hFF : FullyFaithful E.F := ((equivalence_iff_ff_es E.F).mp h_equiv).left
+  rcases hFF with ⟨hinj, hsurj⟩
+  -- Get the inverse in DiscCat A
+  rcases hF_iso with ⟨g', hfg, hgf⟩
+  -- Lift the inverse to C using fullness
+  rcases hsurj (X := Y) (Y := X) g' with ⟨g, hg⟩
+  -- g : C[Y, X] is the candidate inverse
+  exists g
+  refine ⟨?_, ?_⟩
+  · -- f ∘ g = C.id Y
+    apply hinj
+    calc
+      E.F.onHom (f ∘ g) = E.F.onHom f ∘ E.F.onHom g := E.F.map_comp f g
+      _ = E.F.onHom f ∘ g' := by rw [hg]
+      _ = (DiscCat A).id (E.F.onObj Y) := hfg
+      _ = E.F.onHom (C.id Y) := by rw [E.F.map_id Y]
+  · -- g ∘ f = C.id X
+    apply hinj
+    calc
+      E.F.onHom (g ∘ f) = E.F.onHom g ∘ E.F.onHom f := E.F.map_comp g f
+      _ = g' ∘ E.F.onHom f := by rw [hg]
+      _ = (DiscCat A).id (E.F.onObj X) := hgf
+      _ = E.F.onHom (C.id X) := by rw [E.F.map_id X]
 
 /-- The discrete category DiscCat A is skeletal. -/
 theorem discrete_is_skeletal' (A : Type u) : isSkeletal (DiscCat A) :=
@@ -44,13 +80,25 @@ theorem discrete_is_skeletal' (A : Type u) : isSkeletal (DiscCat A) :=
 def isThin (C : Category) : Prop :=
   ∀ {X Y : C.Obj} (f g : C[X, Y]), f = g
 
-/-- A thin skeletal category is essentially a poset.
-    The poset order is given by the existence of a morphism. -/
+/-- A thin skeletal category defines a poset:
+    Define ≤ on objects by X ≤ Y iff C[X,Y] is nonempty.
+    This is reflexive (by id), transitive (by composition), and
+    antisymmetric (by skeletal: Iso → X = Y). -/
 theorem thin_skeletal_defines_poset (C : Category) (thin : isThin C) (skel : isSkeletal C) :
-    True := by
-  -- Given thin and skeletal, define ≤ by: X ≤ Y iff Hom[X,Y] is nonempty.
-  -- Reflexivity: id; Transitivity: composition; Antisymmetry: iso → equality by skeletal
-  trivial
+    ∀ (X Y : C.Obj), (∃ (f : C[X, Y]), True) → (∃ (g : C[Y, X]), True) → X = Y := by
+  intro X Y hXY hYX
+  rcases hXY with ⟨f, _⟩
+  rcases hYX with ⟨g, _⟩
+  -- In a thin category, g ∘ f = id X and f ∘ g = id Y (since both hom-sets have ≤1 element)
+  have h_gf : g ∘ f = C.id X := by
+    apply thin
+  have h_fg : f ∘ g = C.id Y := by
+    apply thin
+  -- So f is an iso, hence X = Y by skeletal
+  have h_iso : IsIso f := by
+    exists g
+    exact ⟨h_fg, h_gf⟩
+  exact skel X Y ⟨mkIso f h_iso⟩
 
 /-- The codiscrete category is thin. -/
 theorem codiscrete_is_thin (A : Type u) : isThin (CodiscCat A) := by

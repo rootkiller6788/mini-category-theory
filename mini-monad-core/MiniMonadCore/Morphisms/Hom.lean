@@ -103,7 +103,72 @@ def monadMorphismComp {C : Category} {M N P : Monad C}
   multCompat X := by
     simp [NaturalTransformation.vcomp, C.assoc, ψ.multCompat, φ.multCompat]
 
+/-! ## Category of Monads (Mon(C)) -/
+
+def monadCategory (C : Category) : Category where
+  Obj := Monad C
+  Hom M N := MonadMorphism M N
+  id M := monadMorphismId M
+  comp ψ φ := monadMorphismComp ψ φ
+  comp_id f := by
+    ext X; simp [monadMorphismId, monadMorphismComp, NaturalTransformation.vcomp, C.id_comp]
+  id_comp f := by
+    ext X; simp [monadMorphismId, monadMorphismComp, NaturalTransformation.vcomp, C.comp_id]
+  assoc f g h := by
+    ext X; simp [monadMorphismComp, NaturalTransformation.vcomp, C.assoc]
+
+/-! ## Monad Morphism from Adjunction -/
+
+def monadMorphismFromAdjunction {C D : Category}
+    {F1 F2 : Functor C D} {G1 G2 : Functor D C}
+    (adj1 : F1 ⊣ G1) (adj2 : F2 ⊣ G2)
+    (α : F1 ⇒ F2) : MonadMorphism (fromAdjunction adj1) (fromAdjunction adj2) where
+  component := NaturalTransformation.vcomp
+    (NaturalTransformation.whiskerRight α G2)
+    (NaturalTransformation.whiskerLeft G2 (NaturalTransformation.id F2))
+  unitCompat X := by
+    simp [fromAdjunction, C.assoc, adj1.leftTriangle, adj2.leftTriangle]
+  multCompat X := by
+    simp [fromAdjunction, C.assoc, D.assoc]
+
+/-! ## Algebra Hom Category -/
+
+def algebraHomCategory {C : Category} (M : Monad C) : Category where
+  Obj := EMAlgebra M
+  Hom A B := AlgebraHom A B
+  id A := algebraHomId A
+  comp g f := algebraHomComp g f
+  comp_id f := by
+    ext; simp [algebraHomId, algebraHomComp, C.comp_id]
+  id_comp f := by
+    ext; simp [algebraHomId, algebraHomComp, C.id_comp]
+  assoc f g h := by
+    ext; simp [algebraHomComp, C.assoc]
+
+/-! ## Morphism Composition Laws -/
+
+theorem monadMorphismCompAssoc {C : Category} {M N P Q : Monad C}
+    (φ : MonadMorphism P Q) (ψ : MonadMorphism N P) (χ : MonadMorphism M N)
+    (X : C.Obj) :
+    C.comp ((monadMorphismComp φ (monadMorphismComp ψ χ)).component.component X) (C.id X) =
+    C.comp ((monadMorphismComp (monadMorphismComp φ ψ) χ).component.component X) (C.id X) := by
+  simp [monadMorphismComp, NaturalTransformation.vcomp, C.assoc, C.comp_id]
+
+theorem monadMorphismIdentityLeft {C : Category} {M N : Monad C}
+    (φ : MonadMorphism M N) (X : C.Obj) :
+    C.comp ((monadMorphismComp (monadMorphismId N) φ).component.component X) (C.id (M.T.mapObj X)) =
+    φ.component.component X := by
+  simp [monadMorphismComp, monadMorphismId, NaturalTransformation.vcomp, C.id_comp, C.comp_id]
+
+theorem monadMorphismIdentityRight {C : Category} {M N : Monad C}
+    (φ : MonadMorphism M N) (X : C.Obj) :
+    C.comp ((monadMorphismComp φ (monadMorphismId M)).component.component X) (C.id (M.T.mapObj X)) =
+    φ.component.component X := by
+  simp [monadMorphismComp, monadMorphismId, NaturalTransformation.vcomp, C.id_comp, C.comp_id]
+
 #eval "Morphisms.Hom: monadMorphismId"
 #eval "Morphisms.Hom: monadMorphismComp"
+#eval "Morphisms.Hom: monadCategory, algebraHomCategory"
+#eval "Morphisms.Hom: monadMorphismFromAdjunction"
 
 end MiniMonadCore

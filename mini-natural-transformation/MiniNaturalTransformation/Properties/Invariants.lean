@@ -54,12 +54,17 @@ def isComponentwiseIso {C D : Category} {F G : Functor C D}
 
 /--
 A natural transformation is componentwise iso iff it is a natural isomorphism.
+Both conditions mean each component has a two-sided inverse.
 -/
 theorem componentwiseIso_iff_natIso {C D : Category} {F G : Functor C D}
     (η : F ⇒ G) : isComponentwiseIso η ↔ isNaturalIso η := by
   constructor
-  · intro h; exact h
-  · intro h; exact h
+  · intro h X
+    rcases h X with ⟨inv, linv, rinv⟩
+    exact ⟨inv, linv, rinv⟩
+  · intro h X
+    rcases h X with ⟨inv, linv, rinv⟩
+    exact ⟨inv, linv, rinv⟩
 
 /-! ## Vertical Composition Preserves Monic/Epic -/
 
@@ -91,6 +96,40 @@ theorem vcomp_preserves_epic {C D : Category} {F G H : Functor C D}
   have h' := hα X (D.comp a (β.component X)) (D.comp b (β.component X)) hcomp
   exact hβ X a b h'
 
+/-! ## Horizontal Composition and Monic/Epic -/
+
+/--
+If α : F ⇒ G and β : H ⇒ K are both componentwise monic, then
+their horizontal composition β ∘ₕ α : F∘H ⇒ G∘K is componentwise monic.
+-/
+theorem hcomp_preserves_monic {B C D : Category}
+    {F G : Functor B C} {H K : Functor C D}
+    (α : F ⇒ G) (β : H ⇒ K)
+    (hα : isComponentwiseMonic α) (hβ : isComponentwiseMonic β) :
+    isComponentwiseMonic (NaturalTransformation.hcomp β α) := by
+  intro X T a b h
+  simp [NaturalTransformation.hcomp, NaturalTransformation.whiskerLeft,
+    NaturalTransformation.whiskerRight, NaturalTransformation.vcomp] at h
+  have h' := hβ (G.mapObj X) _ _ _ h
+  have h'' := hα X _ _ _ h'
+  exact h''
+
+/--
+If α : F ⇒ G and β : H ⇒ K are both componentwise epic, then
+their horizontal composition β ∘ₕ α : F∘H ⇒ G∘K is componentwise epic.
+-/
+theorem hcomp_preserves_epic {B C D : Category}
+    {F G : Functor B C} {H K : Functor C D}
+    (α : F ⇒ G) (β : H ⇒ K)
+    (hα : isComponentwiseEpic α) (hβ : isComponentwiseEpic β) :
+    isComponentwiseEpic (NaturalTransformation.hcomp β α) := by
+  intro X T a b h
+  simp [NaturalTransformation.hcomp, NaturalTransformation.whiskerLeft,
+    NaturalTransformation.whiskerRight, NaturalTransformation.vcomp] at h
+  have h' := hα X _ _ _ h
+  have h'' := hβ (G.mapObj X) _ _ _ h'
+  exact h''
+
 /-! ## #eval Examples -/
 
 /-- Identity natural transformation is componentwise monic in SetCat. -/
@@ -105,6 +144,13 @@ def idComponentwiseEpic : isComponentwiseEpic (NaturalTransformation.id listFunc
   simp [NaturalTransformation.id] at h
   exact h
 
+/-- Reverse is componentwise iso (hence monic and epic). -/
+def reverseIsComponentwiseIso : isComponentwiseIso reverseNatIso.toNatTrans := by
+  intro X
+  refine ⟨reverseNatIso.inv X, reverseNatIso.leftInv X, reverseNatIso.rightInv X⟩
+
 #eval "Properties.Invariants: isComponentwiseMonic, isComponentwiseEpic, isComponentwiseIso, vcomp_preserves_monic, vcomp_preserves_epic"
+#eval "hcomp_preserves_monic, hcomp_preserves_epic, reverseIsComponentwiseIso"
 #eval s!"Identity is both monic and epic componentwise"
 #eval s!"Vertical composition preserves monic and epic properties"
+#eval s!"Reverse is componentwise iso on listFunctor"

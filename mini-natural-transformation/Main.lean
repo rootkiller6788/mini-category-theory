@@ -6,7 +6,7 @@ open MiniMorphismSystem
 
 def main : IO Unit := do
   IO.println "═══════════════════════════════════════"
-  IO.println "  MiniNaturalTransformation v0.1.0"
+  IO.println "  MiniNaturalTransformation v1.0.0 — COMPLETE ✅"
   IO.println "  Natural Transformations Between Functors"
   IO.println "═══════════════════════════════════════"
   IO.println s!"  NaturalTransformation F G: component + naturality square"

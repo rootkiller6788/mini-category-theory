@@ -102,6 +102,95 @@ def monadIsoComp {C : Category} {M N P : Monad C}
   rightInv X := by
     simp [NaturalTransformation.vcomp, C.assoc, iso1.rightInv, iso2.rightInv]
 
-#eval "Morphisms.Iso: monadIsoComp"
+/-! ## Monad Isomorphism Preserves Structure -/
+
+theorem monadIsoPreservesUnit {C : Category} {M N : Monad C} (iso : MonadIso M N) (X : C.Obj) :
+    C.comp (iso.toMor.component.component X) (M.η.component X) = N.η.component X :=
+  iso.toMor.unitCompat X
+
+theorem monadIsoPreservesMult {C : Category} {M N : Monad C} (iso : MonadIso M N) (X : C.Obj) :
+    C.comp (iso.toMor.component.component X) (M.μ.component X) =
+    C.comp (N.μ.component X)
+      (NaturalTransformation.vcomp iso.toMor.component iso.toMor.component).component X :=
+  iso.toMor.multCompat X
+
+theorem monadIsoFromToId {C : Category} {M N : Monad C} (iso : MonadIso M N) (X : C.Obj) :
+    C.comp (iso.fromMor.component.component X) (iso.toMor.component.component X) = C.id (M.T.mapObj X) :=
+  iso.leftInv X
+
+theorem monadIsoToFromId {C : Category} {M N : Monad C} (iso : MonadIso M N) (X : C.Obj) :
+    C.comp (iso.toMor.component.component X) (iso.fromMor.component.component X) = C.id (N.T.mapObj X) :=
+  iso.rightInv X
+
+/-! ## Equivalence of Monads is an Equivalence Relation -/
+
+theorem equivalentMonadsTrans {C : Category} {M N P : Monad C}
+    (h1 : areEquivalentMonads M N) (h2 : areEquivalentMonads N P) : areEquivalentMonads M P := by
+  rcases h1 with ⟨iso1⟩
+  rcases h2 with ⟨iso2⟩
+  exact ⟨monadIsoComp iso1 iso2⟩
+
+theorem equivalentMonadsEquivalence {C : Category} :
+    Equivalence (areEquivalentMonads (C := C)) where
+  refl M := equivalentMonadsRefl M
+  symm h := equivalentMonadsSymm h
+  trans h1 h2 := equivalentMonadsTrans h1 h2
+
+/-! ## Algebra Isomorphism Properties -/
+
+theorem algebraIsoReversible {C : Category} {M : Monad C} {A B : EMAlgebra M}
+    (iso : AlgebraIso A B) :
+    C.comp iso.toHom.hom iso.fromHom.hom = C.id B.carrier :=
+  iso.rightInv
+
+theorem algebraIsoFromToId {C : Category} {M : Monad C} {A B : EMAlgebra M}
+    (iso : AlgebraIso A B) :
+    C.comp iso.fromHom.hom iso.toHom.hom = C.id A.carrier :=
+  iso.leftInv
+
+/-! ## MonadIso Transport -/
+
+def transportMonadAlongIso {C : Category} {M N : Monad C}
+    (iso : MonadIso M N) (A : EMAlgebra M) : EMAlgebra N where
+  carrier := A.carrier
+  structure := C.comp A.structure (iso.fromMor.component.component A.carrier)
+  unitLaw := by
+    calc
+      C.comp (C.comp A.structure (iso.fromMor.component.component A.carrier))
+          (N.η.component A.carrier) =
+        C.comp A.structure
+          (C.comp (iso.fromMor.component.component A.carrier) (N.η.component A.carrier)) := by
+        rw [C.assoc]
+      _ = C.comp A.structure (M.η.component A.carrier) := by
+        rw [iso.fromMor.unitCompat A.carrier]
+      _ = C.id A.carrier := A.unitLaw
+  multLaw := by
+    calc
+      C.comp (C.comp A.structure (iso.fromMor.component.component A.carrier))
+          (N.μ.component A.carrier) =
+        C.comp A.structure
+          (C.comp (iso.fromMor.component.component A.carrier) (N.μ.component A.carrier)) := by
+        rw [C.assoc]
+      _ = C.comp A.structure
+          (C.comp (M.μ.component A.carrier)
+            ((NaturalTransformation.vcomp iso.fromMor.component iso.fromMor.component).component A.carrier)) := by
+        rw [iso.fromMor.multCompat A.carrier]
+      _ = C.comp (C.comp A.structure (M.μ.component A.carrier))
+          ((NaturalTransformation.vcomp iso.fromMor.component iso.fromMor.component).component A.carrier) := by
+        rw [C.assoc]
+      _ = C.comp (C.comp A.structure (M.T.mapHom A.structure))
+          ((NaturalTransformation.vcomp iso.fromMor.component iso.fromMor.component).component A.carrier) := by
+        rw [A.multLaw]
+      _ = C.comp A.structure
+          (C.comp (M.T.mapHom A.structure)
+            ((NaturalTransformation.vcomp iso.fromMor.component iso.fromMor.component).component A.carrier)) := by
+        rw [C.assoc]
+      _ = C.comp (C.comp A.structure (iso.fromMor.component.component A.carrier))
+          (N.T.mapHom (C.comp A.structure (iso.fromMor.component.component A.carrier))) := by
+        simp [C.assoc, N.T.preservesComp]
+
+#eval "Morphisms.Iso: monadIsoComp, transportMonadAlongIso"
+#eval "Morphisms.Iso: equivalence relation proofs"
+#eval "Morphisms.Iso: algebraIso properties"
 
 end MiniMonadCore

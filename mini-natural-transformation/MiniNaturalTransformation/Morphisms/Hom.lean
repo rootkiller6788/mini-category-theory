@@ -72,21 +72,53 @@ theorem hcomp_id_right {C D E : Category}
 
 /--
 A modification m : α ⇛ β between natural transformations α, β : F ⇒ G
-is a family of 2-cells m_X : α_X → β_X satisfying a coherence condition.
-In Cat, this is a natural transformation between natural transformations.
+is a family of 2-cells m_X : α_X → β_X satisfying a coherence condition
+that makes the following cylinder diagram commute:
+For each f : X → Y in C, we have:
+  β_Y ∘ F(f) = G(f) ∘ β_X  (naturality of β)
+  α_Y ∘ F(f) = G(f) ∘ α_X  (naturality of α)
+  m_Y ∘ α_Y = β_Y ∘ m_X   (modification condition)
+
+In Cat, a modification is a natural transformation between natural
+transformations, making Cat a 3-dimensional categorical structure.
 -/
 structure Modification {C D : Category} {F G : Functor C D}
     (α β : F ⇒ G) where
-  component : ∀ (X : C.Obj), D[F.mapObj X, G.mapObj X]
-  coherence : ∀ (X : C.Obj), component X = component X
+  component : ∀ (X : C.Obj), D[F.mapObj X, F.mapObj X]
+  modificationNatural : ∀ {X Y : C.Obj} (f : C[X, Y]),
+    D.comp (component Y) (α.component Y) = D.comp (β.component Y) (component X)
 
 /--
-The identity modification on a natural transformation α.
+The identity modification on a natural transformation α has
+component-wise identity 2-cells.
 -/
 def Modification.id {C D : Category} {F G : Functor C D}
     (α : F ⇒ G) : Modification α α where
-  component X := α.component X
-  coherence X := rfl
+  component X := D.id (F.mapObj X)
+  modificationNatural {X Y} f := by
+    simp
+
+/--
+Vertical composition of modifications: given m : α ⇛ β and n : β ⇛ γ,
+produce n ∘ m : α ⇛ γ with component (n_X ∘ m_X).
+-/
+def Modification.vcomp {C D : Category} {F G : Functor C D}
+    {α β γ : F ⇒ G} (n : Modification β γ) (m : Modification α β) :
+    Modification α γ where
+  component X := D.comp (n.component X) (m.component X)
+  modificationNatural {X Y} f := by
+    calc
+      D.comp (D.comp (n.component Y) (m.component Y)) (α.component Y) =
+        D.comp (n.component Y) (D.comp (m.component Y) (α.component Y)) := by
+        simp [D.assoc]
+      _ = D.comp (n.component Y) (D.comp (β.component Y) (m.component X)) := by
+        rw [m.modificationNatural]
+      _ = D.comp (D.comp (n.component Y) (β.component Y)) (m.component X) := by
+        simp [D.assoc]
+      _ = D.comp (D.comp (γ.component Y) (n.component X)) (m.component X) := by
+        rw [n.modificationNatural]
+      _ = D.comp (γ.component Y) (D.comp (n.component X) (m.component X)) := by
+        simp [D.assoc]
 
 /-! ## #eval Examples -/
 
@@ -96,6 +128,12 @@ def hcompExample : Functor.comp listFunctor maybeFunctor ⇒
   NaturalTransformation.hcomp (NaturalTransformation.id maybeFunctor)
     (NaturalTransformation.id listFunctor)
 
-#eval "Morphisms.Hom: hcomp (∘ₕ), hcomp_id_left, hcomp_id_right, Modification"
+/-- The identity modification on id_{listFunctor}. -/
+def idModExample : Modification (NaturalTransformation.id listFunctor)
+    (NaturalTransformation.id listFunctor) :=
+  Modification.id (NaturalTransformation.id listFunctor)
+
+#eval "Morphisms.Hom: hcomp (∘ₕ), hcomp_id_left, hcomp_id_right, Modification, Modification.id, Modification.vcomp"
 #eval s!"Horizontal composition: β ∘ₕ α = (β*G) ∘ᵥ (H*α)"
 #eval s!"Cat is a strict 2-category"
+#eval s!"Modifications: 3-dimensional structure on Cat"

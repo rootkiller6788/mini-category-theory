@@ -15,6 +15,7 @@ import MiniMonadCore.Core.Basic
 import MiniMonadCore.Core.Objects
 import MiniMonadCore.Constructions.Universal
 import MiniMonadCore.Morphisms.Iso
+import MiniMonadCore.Theorems.Basic
 import MiniMonadCore.Properties.ClassificationData
 
 namespace MiniMonadCore

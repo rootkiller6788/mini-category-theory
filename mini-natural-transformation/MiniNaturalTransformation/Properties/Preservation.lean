@@ -97,6 +97,51 @@ theorem comp_with_natIso_preserves_epic {C D : Category} {F G H : Functor C D}
     _ = D.comp (D.comp b (α.toNatTrans.component X)) (β.component X) := by
       simp [D.assoc]
 
+/-! ## Functoriality of Whiskering -/
+
+/--
+Whiskering is functorial in the natural transformation argument:
+if α = β then F*α = F*β.
+-/
+theorem whiskerLeft_congr {C D E : Category}
+    (F : Functor C D) {G H : Functor D E} {α β : G ⇒ H}
+    (h : α = β) :
+    NaturalTransformation.whiskerLeft F α = NaturalTransformation.whiskerLeft F β := by
+  rw [h]
+
+/--
+Right whiskering is functorial in the natural transformation argument.
+-/
+theorem whiskerRight_congr {C D E : Category}
+    {F G : Functor C D} {α β : F ⇒ G} (H : Functor D E)
+    (h : α = β) :
+    NaturalTransformation.whiskerRight α H = NaturalTransformation.whiskerRight β H := by
+  rw [h]
+
+/--
+Left whiskering preserves natural isomorphisms: if α : G ≅ₙ H is a natural
+isomorphism, then F*α : F∘G ≅ₙ F∘H is also a natural isomorphism.
+-/
+theorem whiskerLeft_preserves_iso {C D E : Category}
+    (F : Functor C D) {G H : Functor D E} (α : G ≅ₙ H) :
+    isNaturalIso (NaturalTransformation.whiskerLeft F α.toNatTrans) := by
+  intro X
+  refine ⟨H.mapHom (α.inv (F.mapObj X)), ?_, ?_⟩
+  · simp [NaturalTransformation.whiskerLeft, ← H.preservesComp, α.leftInv (F.mapObj X)]
+  · simp [NaturalTransformation.whiskerLeft, ← H.preservesComp, α.rightInv (F.mapObj X)]
+
+/--
+Right whiskering preserves natural isomorphisms: if α : F ≅ₙ G, then
+α*H : F∘H ⇒ G∘H is pointwise iso (components H(α.inv X)).
+-/
+theorem whiskerRight_preserves_iso {C D E : Category}
+    {F G : Functor C D} (α : F ≅ₙ G) (H : Functor D E) :
+    isNaturalIso (NaturalTransformation.whiskerRight α.toNatTrans H) := by
+  intro X
+  refine ⟨H.mapHom (α.inv X), ?_, ?_⟩
+  · simp [NaturalTransformation.whiskerRight, ← H.preservesComp, α.leftInv X]
+  · simp [NaturalTransformation.whiskerRight, ← H.preservesComp, α.rightInv X]
+
 /-! ## #eval Examples -/
 
 /-- Identity is preserved under left whiskering. -/
@@ -108,6 +153,13 @@ def idPreservedByWhiskerLeft : isComponentwiseMonic
       simp [NaturalTransformation.id] at h
       exact h)
 
+/-- Reverse whiskered by identity is still an isomorphism. -/
+def reverseWhiskeredById : isNaturalIso
+    (NaturalTransformation.whiskerRight reverseNatIso.toNatTrans idFunctor) :=
+  whiskerRight_preserves_iso reverseNatIso idFunctor
+
 #eval "Properties.Preservation: whiskerLeft_preserves_monic, whiskerLeft_preserves_epic, comp_with_natIso_preserves_monic, comp_with_natIso_preserves_epic"
+#eval "whiskerLeft_congr, whiskerRight_congr, whiskerLeft_preserves_iso, whiskerRight_preserves_iso"
 #eval s!"Whiskering preserves monic and epic properties"
 #eval s!"Composition with natural iso preserves monic/epic"
+#eval s!"Whiskering preserves natural isomorphisms"

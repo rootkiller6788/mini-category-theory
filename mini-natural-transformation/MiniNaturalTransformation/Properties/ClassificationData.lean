@@ -67,15 +67,20 @@ structure DinaturalTransformation {C D : Category}
 /-! ## Extranatural Transformation -/
 
 /--
-An extranatural transformation generalizes dinatural transformations
-to functors of mixed variance.
+An extranatural transformation generalizes natural transformations to
+functors of mixed variance. Given F : C^op × C × C → D and G : C → D,
+an extranatural transformation has components η_{X,Y} : F(X, X, Y) → G(Y)
+that are natural in Y and extranatural in X.
 -/
 structure ExtranaturalTransformation {C D : Category}
     (F : Functor ((Cᵒᵖ ×ᶜ Cᵒᵖ) ×ᶜ C) D) (G : Functor C D) where
   component : ∀ (X Y : C.Obj), D[F.mapObj ((X, X), Y), G.mapObj Y]
-  extranatural : ∀ {X X' : C.Obj} (f : C[X, X']) (Y : C.Obj),
-    D.comp (G.mapHom (C.id Y)) (component X Y) =
-    D.comp (G.mapHom (C.id Y)) (component X' Y)
+  naturalInY : ∀ (X Y Z : C.Obj) (g : C[Y, Z]),
+    D.comp (component X Z) (F.mapHom ((C.id X, C.id X), g)) =
+    D.comp (G.mapHom g) (component X Y)
+  extranaturalInX : ∀ (X X' Y : C.Obj) (f : C[X, X']),
+    D.comp (component X Y) (F.mapHom ((f, C.id X'), C.id Y)) =
+    D.comp (component X' Y) (F.mapHom ((C.id X, f), C.id Y))
 
 /-! ## Relationship between Types -/
 
@@ -98,6 +103,26 @@ def identityToDinatural {C D : Category} (F : Functor C D) :
   component X := D.id (F.mapObj X)
   dinaturality f := by simp
 
+/-! ## Natural Transformation between Endofunctors -/
+
+/--
+A natural transformation between endofunctors F, G : C → C is
+sometimes called an "endonatural transformation" and forms the
+endofunctor category [C, C] which is a strict monoidal category
+under composition.
+-/
+structure EndoNatTrans {C : Category} (F G : Functor C C) where
+  natTrans : F ⇒ G
+
+/--
+Composition of endonatural transformations: given α : F ⇒ G and β : H ⇒ K
+(all endofunctors), define β ⊗ α : F∘H ⇒ G∘K via horizontal composition.
+-/
+def endoNatTransComp {C : Category} {F G H K : Functor C C}
+    (α : EndoNatTrans F G) (β : EndoNatTrans H K) :
+    EndoNatTrans (Functor.comp F H) (Functor.comp G K) where
+  natTrans := NaturalTransformation.hcomp α.natTrans β.natTrans
+
 /-! ## #eval Examples -/
 
 /-- A cartesian natural transformation from List to Option (head). -/
@@ -106,6 +131,14 @@ def headCartesian : CartesianNatTrans listFunctor maybeFunctor where
   natural {X Y} f xs := by
     simp
 
+/-- The length natural transformation: listFunctor ⇒ constNat. -/
+def lengthCartesian : CartesianNatTrans listFunctor constNat where
+  components X xs := xs.length
+  natural {X Y} f xs := by
+    simp [listFunctor, constNat]
+
 #eval "Properties.ClassificationData: isPointwise, CartesianNatTrans, DinaturalTransformation, ExtranaturalTransformation"
+#eval "EndoNatTrans, endoNatTransComp, lengthCartesian"
 #eval s!"Cartesian natural transformation: head : List → Option"
 #eval headCartesian.toNatTrans.component Nat [1,2,3]
+#eval lengthCartesian.toNatTrans.component Nat [1,2,3,4]

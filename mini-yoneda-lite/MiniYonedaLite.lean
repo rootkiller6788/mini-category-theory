@@ -26,3 +26,10 @@ import MiniYonedaLite.Bridges.ToAlgebra
 import MiniYonedaLite.Bridges.ToTopology
 import MiniYonedaLite.Bridges.ToGeometry
 import MiniYonedaLite.Bridges.ToComputation
+import MiniYonedaLite.Bridges.ToTypeTheoryCS
+import MiniYonedaLite.Theorems.ConcreteYonedaProof
+import MiniYonedaLite.Theorems.CoyonedaLemma
+import MiniYonedaLite.Theorems.YonedaEmbeddingProps
+import MiniYonedaLite.Examples.PreorderYoneda
+import MiniYonedaLite.Examples.MonoidYoneda
+import MiniYonedaLite.Examples.GroupoidYoneda

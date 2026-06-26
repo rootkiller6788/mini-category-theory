@@ -88,6 +88,61 @@ theorem snd_pair {H F G : Functor SetCat SetCat}
     NaturalTransformation.vcomp (sndProj F G) (pairNatTrans α β) = β := by
   funext X x; simp [pairNatTrans, sndProj, NaturalTransformation.vcomp]
 
+/-! ## Diagonal Natural Transformation -/
+
+/--
+The diagonal natural transformation Δ : F ⇒ F × F is the pairing of the
+identity natural transformation with itself.
+-/
+def diagonalNatTrans (F : Functor SetCat SetCat) : F ⇒ pointwiseProduct F F :=
+  pairNatTrans (NaturalTransformation.id F) (NaturalTransformation.id F)
+
+/--
+The diagonal followed by first projection is the identity.
+-/
+theorem diag_fst (F : Functor SetCat SetCat) :
+    NaturalTransformation.vcomp (fstProj F F) (diagonalNatTrans F) =
+    NaturalTransformation.id F := by
+  funext X x; simp [diagonalNatTrans, fstProj, pairNatTrans, NaturalTransformation.id,
+    NaturalTransformation.vcomp]
+
+/--
+The diagonal followed by second projection is the identity.
+-/
+theorem diag_snd (F : Functor SetCat SetCat) :
+    NaturalTransformation.vcomp (sndProj F F) (diagonalNatTrans F) =
+    NaturalTransformation.id F := by
+  funext X x; simp [diagonalNatTrans, sndProj, pairNatTrans, NaturalTransformation.id,
+    NaturalTransformation.vcomp]
+
+/-! ## Pointwise Coproduct of Functors -/
+
+/--
+The pointwise coproduct (sum) of two SetCat-valued functors F, G : C → SetCat
+is the functor X ↦ F(X) ⊕ G(X) (using Sum type).
+-/
+def pointwiseCoproduct (F G : Functor SetCat SetCat) : Functor SetCat SetCat where
+  mapObj X := F.mapObj X ⊕ G.mapObj X
+  mapHom {X Y} f := Sum.map (F.mapHom f) (G.mapHom f)
+  preservesId X := by
+    funext s; cases s <;> simp
+  preservesComp {X Y Z} f g := by
+    funext s; cases s <;> simp
+
+/--
+First injection: ι₁ : F ⇒ F ⊕ G.
+-/
+def inlNatTrans (F G : Functor SetCat SetCat) : F ⇒ pointwiseCoproduct F G where
+  component X x := Sum.inl x
+  naturality {X Y} f := by funext x; simp
+
+/--
+Second injection: ι₂ : G ⇒ F ⊕ G.
+-/
+def inrNatTrans (F G : Functor SetCat SetCat) : G ⇒ pointwiseCoproduct F G where
+  component X y := Sum.inr y
+  naturality {X Y} f := by funext y; simp
+
 /-! ## #eval Examples -/
 
 /-- Pointwise product of List × Option. -/
@@ -95,5 +150,8 @@ def listTimesMaybe := pointwiseProduct listFunctor maybeFunctor
 
 /-- Fst projection at Nat. -/
 #eval "Constructions.Products: pointwiseProduct, productNatTrans, fstProj, sndProj, pairNatTrans"
+#eval "diagonalNatTrans, diag_fst, diag_snd, pointwiseCoproduct, inlNatTrans, inrNatTrans"
 #eval fstProj listFunctor maybeFunctor |>.component Nat (([1,2,3], some "hello"))
 #eval s!"Product of functors: X → F(X) × G(X)"
+#eval s!"Coproduct of functors: X → F(X) ⊕ G(X)"
+#eval inlNatTrans listFunctor maybeFunctor |>.component Nat [1,2,3]

@@ -86,13 +86,40 @@ axiom coneCatEquivSlice {J C : Category} {D : Diagram J C} (L : Limit D) :
 
 /--
 Any two limits of the same diagram are isomorphic via unique isomorphisms.
+This follows from the universal property: each limit cone factors through the other,
+and the compositions are identities by the uniqueness part of the universal property.
 -/
-def limitIsoUnique {J C : Category} {D : Diagram J C} (L₁ L₂ : Limit D) : True := by
-  have f := limitUnique L₁ L₂
-  have g := limitUniqueInv L₁ L₂
-  have h1 := limitUniqueId L₁ L₂
-  have h2 := limitUniqueId' L₁ L₂
-  exact trivial
+theorem limitIsIsoUnique {J C : Category} {D : Diagram J C} (L₁ L₂ : Limit D) :
+    IsIso (limitUnique L₁ L₂) := by
+  exists limitUniqueInv L₁ L₂
+  exact ⟨limitUniqueId L₁ L₂, limitUniqueId' L₁ L₂⟩
+
+/-- Colimits of the same diagram are isomorphic via their universal properties. -/
+theorem colimitIsIsoUnique {J C : Category} {D : Diagram J C} (C₁ C₂ : Colimit D) :
+    IsIso (colimitUniqueInv C₁ C₂) := by
+  exists colimitUnique C₁ C₂
+  exact ⟨colimitUniqueId' C₁ C₂, colimitUniqueId C₁ C₂⟩
+
+/-- The limit cone of a diagram is terminal in the category of cones.
+    This is an alternative formulation of the universal property. -/
+theorem limitConeIsTerminal {J C : Category} {D : Diagram J C} (L : Limit D) :
+    IsLimit L.limitCone :=
+  isLimitOfLimit L
+
+/-- The colimit cocone of a diagram is initial in the category of cocones. -/
+theorem colimitCoconeIsInitial {J C : Category} {D : Diagram J C} (CL : Colimit D) :
+    IsColimit CL.colimitCocone :=
+  isColimitOfColimit CL
+
+/-- IsLimit is unique: if c₁ and c₂ are both limit cones, they're isomorphic. -/
+theorem isLimitUnique {J C : Category} {D : Diagram J C} {c₁ c₂ : Cone D}
+    (h₁ : IsLimit c₁) (h₂ : IsLimit c₂) : Iso C c₁.apex c₂.apex :=
+  limitIso (limitFromIsLimit c₁ h₁) (limitFromIsLimit c₂ h₂)
+
+/-- IsColimit is unique: if c₁ and c₂ are both colimit cocones, they're isomorphic. -/
+theorem isColimitUnique {J C : Category} {D : Diagram J C} {c₁ c₂ : Cocone D}
+    (h₁ : IsColimit c₁) (h₂ : IsColimit c₂) : Iso C c₁.nadir c₂.nadir :=
+  colimitIso (colimitFromIsColimit c₁ h₁) (colimitFromIsColimit c₂ h₂)
 
 /-! ## #eval examples -/
 
@@ -114,6 +141,6 @@ def unitLimit : Limit unitDiag where
 #eval "Morphisms.Equivalence: LimitUniversalEquivalence, limit-colimit duality"
 #eval unitLimit.limitCone.apex
 #eval ConeCat unitDiag |>.Obj
-#eval limitIsoUnique unitLimit unitLimit
+#eval (limitIso unitLimit unitLimit).hom ()
 
 end MiniLimitColimit

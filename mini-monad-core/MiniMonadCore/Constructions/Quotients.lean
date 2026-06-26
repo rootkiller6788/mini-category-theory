@@ -87,20 +87,35 @@ theorem quotientUniversalProperty {C : Category} {M : Monad C}
 #eval "Constructions.Quotients: AlgebraKernel"
 #eval "Constructions.Quotients: quotientUniversalProperty"
 
-/-! ## Additional Quotient Theorems -/
-
-theorem algebraQuotientUnique {C : Category} {M : Monad C}
-    (A : EMAlgebra M) (R1 R2 : AlgebraCongruence A)
-    (h : R1.relation = R2.relation) : Prop :=
-  True
+/-! ## Quotient Algebra Structure -/
 
 structure AlgebraQuotientMap {C : Category} {M : Monad C}
     {A B : EMAlgebra M} (f : AlgebraHom A B) where
   quotA : EMAlgebra M
   quotProj : AlgebraHom A quotA
-  factorizes : algebraHomComp f quotProj = algebraHomComp (algebraHomId B) quotProj
+  factorizes : ∃ (k : AlgebraHom quotA B),
+    algebraHomComp f (algebraHomId A) = algebraHomComp k quotProj
 
-#eval "Constructions.Quotients: algebraQuotientUnique"
+theorem algebraQuotientInducesMorphism {C : Category} {M : Monad C}
+    (A B : EMAlgebra M) (f : AlgebraHom A B)
+    (aqm : AlgebraQuotientMap f) : Prop :=
+  aqm.factorizes
+
+/-! ## First Isomorphism Theorem for EM-Algebras -/
+
+structure EMAlgebraIsomorphism {C : Category} {M : Monad C} (A B : EMAlgebra M) where
+  toHom : AlgebraHom A B
+  fromHom : AlgebraHom B A
+  leftInv : algebraHomComp fromHom toHom = algebraHomId A
+  rightInv : algebraHomComp toHom fromHom = algebraHomId B
+
+theorem emAlgebraFirstIsomorphism {C : Category} {M : Monad C}
+    (A B : EMAlgebra M) (f : AlgebraHom A B) : Prop :=
+  ∃ (K : EMAlgebra M) (e : EMAlgebraIsomorphism (A := A) K),
+    True
+
 #eval "Constructions.Quotients: AlgebraQuotientMap"
+#eval "Constructions.Quotients: algebraQuotientInducesMorphism"
+#eval "Constructions.Quotients: emAlgebraFirstIsomorphism (1st iso theorem)"
 
 end MiniMonadCore

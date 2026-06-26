@@ -96,8 +96,57 @@ theorem whiskerRight_vcomp {C D E : Category}
       (NaturalTransformation.whiskerRight α K) := by
   funext X; simp [K.preservesComp]
 
+/-! ## Whisker-Whisker Exchange -/
+
+/--
+Left and right whiskering commute: given α : F ⇒ G (B → C), β : G ⇒ H (C → D),
+and K : D → E, we have K ∘ (β ∘ α) = (K ∘ β) ∘ α.
+-/
+theorem whiskerLeft_whiskerRight_exchange {B C D E : Category}
+    (F : Functor B C) {G H : Functor C D} (α : G ⇒ H) (K : Functor D E) :
+    NaturalTransformation.whiskerRight (NaturalTransformation.whiskerLeft F α) K =
+    NaturalTransformation.whiskerLeft F (NaturalTransformation.whiskerRight α K) := by
+  funext X; rfl
+
+/--
+Triple whiskering: left and right whiskering operations are compatible
+under composition with multiple functors.
+-/
+theorem whiskering_compatibility {A B C D E : Category}
+    (A_f : Functor A B) {F G : Functor B C} (α : F ⇒ G)
+    (D_f : Functor C D) (E_f : Functor D E) :
+    NaturalTransformation.whiskerRight
+      (NaturalTransformation.whiskerLeft A_f (NaturalTransformation.whiskerRight α D_f)) E_f =
+    NaturalTransformation.whiskerRight
+      (NaturalTransformation.whiskerRight (NaturalTransformation.whiskerLeft A_f α) D_f) E_f := by
+  funext X; rfl
+
+/-! ## Double Naturality -/
+
+/--
+Given natural transformations α : F ⇒ G and β : H ⇒ K, and a morphism
+f : X → Y, the double naturality square commutes.
+-/
+theorem double_naturality {C D : Category}
+    {F G H K : Functor C D} (α : F ⇒ G) (β : H ⇒ K)
+    {X Y : C.Obj} (f : C[X, Y]) :
+    D.comp (D.comp (β.component Y) (α.component Y)) (F.mapHom f) =
+    D.comp (D.comp (K.mapHom f) (β.component X)) (α.component X) := by
+  calc
+    D.comp (D.comp (β.component Y) (α.component Y)) (F.mapHom f) =
+      D.comp (β.component Y) (D.comp (α.component Y) (F.mapHom f)) := by
+      simp [D.assoc]
+    _ = D.comp (β.component Y) (D.comp (G.mapHom f) (α.component X)) := by
+      rw [α.naturality]
+    _ = D.comp (D.comp (β.component Y) (G.mapHom f)) (α.component X) := by
+      simp [D.assoc]
+    _ = D.comp (D.comp (K.mapHom f) (β.component X)) (α.component X) := by
+      rw [β.naturality]
+
 /-! ## #eval Examples -/
 
 #eval "Core.Laws: naturalitySquare, vcomp_assoc, interchangeLaw, whiskerLeft_vcomp, whiskerRight_vcomp"
+#eval "whiskerLeft_whiskerRight_exchange, whiskering_compatibility, double_naturality"
 #eval s!"Vertical associativity: (γ ∘ β) ∘ α = γ ∘ (β ∘ α)"
 #eval s!"Interchange law (middle-four exchange) verified"
+#eval s!"Double naturality: β_Y ∘ α_Y ∘ Ff = Kf ∘ β_X ∘ α_X"

@@ -83,12 +83,50 @@ theorem equivOfSetValued_bijection {C : Category} {F G : Functor C SetCat}
   simp at h'
   exact h'
 
+/--
+The other direction of the bijection: applying α_X then its inverse returns
+the element.
+-/
+theorem equivOfSetValued_bijection_right {C : Category} {F G : Functor C SetCat}
+    (α : F ≅ₙ G) (X : C.Obj) (y : G.mapObj X) :
+    (α.toNatTrans.component X) ((α.inv X) y) = y := by
+  have h := α.rightInv X
+  funext _ at h
+  have h' := congrFun h y
+  simp at h'
+  exact h'
+
+/-! ## Natural Equivalence Preserves Structure -/
+
+/--
+Natural equivalence preserves the property of being a natural isomorphism.
+If F ≅ₙ G and α : H ⇒ K is a natural isomorphism in [C, D], then the
+transported morphism is also a natural isomorphism.
+-/
+theorem natEquiv_preserves_natIso {C D : Category} {F G : Functor C D}
+    (equiv : F ≅ₙ G) : isNaturalIso equiv.toNatTrans := by
+  intro X
+  refine ⟨equiv.inv X, equiv.leftInv X, equiv.rightInv X⟩
+
+/--
+A composition of natural equivalences is a natural equivalence.
+-/
+theorem comp_natEquiv {C D : Category} {F G H : Functor C D}
+    (α : F ≅ₙ G) (β : G ≅ₙ H) : areNaturallyEquivalent F H :=
+  naturallyEquivalent_trans ⟨α⟩ ⟨β⟩
+
 /-! ## #eval Examples -/
 
 /-- listFunctor is naturally equivalent to itself. -/
 def listSelfEquiv : areNaturallyEquivalent listFunctor listFunctor :=
   naturallyEquivalent_refl listFunctor
 
+/-- reverse is a natural isomorphism, hence an equivalence. -/
+def reverseEquiv : areNaturallyEquivalent listFunctor listFunctor :=
+  ⟨reverseNatIso⟩
+
 #eval "Morphisms.Equivalence: areNaturallyEquivalent, refl, symm, trans, iso_implies_naturallyEquivalent"
+#eval "equivOfSetValued_bijection_right, natEquiv_preserves_natIso, comp_natEquiv"
 #eval s!"listFunctor naturally equivalent to itself: {listSelfEquiv}"
 #eval "Natural equivalence is an equivalence relation on functors"
+#eval "reverse is a natural equivalence on listFunctor"

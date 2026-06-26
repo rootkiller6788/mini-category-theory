@@ -75,10 +75,69 @@ structure SetSubfunctor (F : Functor SetCat SetCat) where
   closedUnderMap : ∀ {X Y : Type} (f : X → Y) (x : F.mapObj X),
     pred X x → pred Y (F.mapHom f x)
 
+/-! ## Epimorphic Natural Transformation (Dual) -/
+
+/--
+A natural transformation η : F ⇒ G is epic (in the functor category)
+if for any α, β : G ⇒ H with α ∘ η = β ∘ η, we have α = β.
+-/
+def isEpicNatTrans' {C D : Category} {F G : Functor C D}
+    (η : F ⇒ G) : Prop :=
+  ∀ {H : Functor C D} (α β : G ⇒ H),
+    NaturalTransformation.vcomp α η = NaturalTransformation.vcomp β η → α = β
+
+/--
+Dual to subobjects: an epimorphic natural transformation η : F ⇒ G
+expresses G as a quotient of F (pointwise).
+-/
+def isPointwiseEpic' {C D : Category} {F G : Functor C D}
+    (η : F ⇒ G) : Prop :=
+  ∀ (X : C.Obj) {T : D.Obj} (a b : D[G.mapObj X, T]),
+    D.comp a (η.component X) = D.comp b (η.component X) → a = b
+
+/--
+Pointwise epic implies epic in the functor category.
+-/
+theorem pointwiseEpic_implies_epic' {C D : Category} {F G : Functor C D}
+    (η : F ⇒ G) (h : isPointwiseEpic' η) : isEpicNatTrans' η := by
+  intro H α β heq
+  funext X
+  apply h X (α.component X) (β.component X)
+  have hcomp := congrArg (λ t => t.component X) heq
+  simp [NaturalTransformation.vcomp] at hcomp
+  exact hcomp
+
+/-! ## Subfunctor Lattice -/
+
+/--
+The intersection of two subfunctors S₁, S₂ of F: pointwise intersection
+of their defining predicates (for SetCat-valued functors).
+-/
+def intersectSubfunctors (F : Functor SetCat SetCat)
+    (S₁ S₂ : SetSubfunctor F) : SetSubfunctor F where
+  pred X x := S₁.pred X x ∧ S₂.pred X x
+  closedUnderMap {X Y} f x h := by
+    rcases h with ⟨h₁, h₂⟩
+    exact ⟨S₁.closedUnderMap f x h₁, S₂.closedUnderMap f x h₂⟩
+
+/--
+The union of two subfunctors S₁, S₂ of F: pointwise union.
+-/
+def unionSubfunctors (F : Functor SetCat SetCat)
+    (S₁ S₂ : SetSubfunctor F) : SetSubfunctor F where
+  pred X x := S₁.pred X x ∨ S₂.pred X x
+  closedUnderMap {X Y} f x h := by
+    rcases h with (h₁ | h₂)
+    · exact Or.inl (S₁.closedUnderMap f x h₁)
+    · exact Or.inr (S₂.closedUnderMap f x h₂)
+
 /-! ## #eval Examples -/
 
 /-- The subfunctor of nonempty lists: S(X) = {xs : List X | xs ≠ []}. -/
 def nonemptyPred : ∀ (X : Type), List X → Prop := λ X xs => xs ≠ []
+
+/-- The subfunctor of even-length lists. -/
+def evenLengthPred (X : Type) (xs : List X) : Prop := xs.length % 2 = 0
 
 /-- Identity natural transformation is pointwise monic in SetCat. -/
 def idIsPointwiseMonic : isPointwiseMonic (NaturalTransformation.id listFunctor) := by
@@ -87,5 +146,7 @@ def idIsPointwiseMonic : isPointwiseMonic (NaturalTransformation.id listFunctor)
   exact h
 
 #eval "Constructions.Subobjects: Subfunctor, isPointwiseMonic, isMonicNatTrans, pointwiseMonic_implies_monic, SetSubfunctor"
+#eval "intersectSubfunctors, unionSubfunctors, evenLengthPred"
 #eval s!"Identity natural transformation is pointwise monic"
 #eval s!"nonemptyPred on List Nat 3: {nonemptyPred Nat ([1,2,3] : List Nat)}"
+#eval evenLengthPred Nat [1,2,3,4]

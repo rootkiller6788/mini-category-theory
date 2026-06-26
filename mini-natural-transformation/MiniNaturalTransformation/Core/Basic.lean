@@ -81,4 +81,59 @@ def powersetFunctor : Functor SetCat SetCat where
     · intro ⟨x, hx, hP⟩; exact ⟨g x, rfl, x, hx, hP⟩
     · intro ⟨y, hy, x, hx, hP⟩; subst hy; exact ⟨x, hx, hP⟩
 
+/-! ## Component-wise Equality -/
+
+/--
+Two natural transformations are equal if and only if they have equal
+components at every object. This is the fundamental extensionality principle.
+-/
+theorem natTrans_ext {C D : Category} {F G : Functor C D} (α β : F ⇒ G) :
+    α = β ↔ ∀ (X : C.Obj), α.component X = β.component X := by
+  constructor
+  · intro h X; rw [h]
+  · intro h
+    cases α; cases β
+    simp at h
+    simp [h]
+
+/-! ## Natural Transformation Pre-composition with Functor -/
+
+/--
+Pre-composition of a natural transformation with a functor:
+given η : F ⇒ G with F, G : D → E and H : C → D,
+we get ηH : F∘H ⇒ G∘H with component η_{H(X)}.
+-/
+def NaturalTransformation.precomp {C D E : Category}
+    (H : Functor C D) {F G : Functor D E} (η : F ⇒ G) :
+    Functor.comp H F ⇒ Functor.comp H G where
+  component X := η.component (H.mapObj X)
+  naturality {X Y} f := by
+    simp [η.naturality (H.mapHom f), H.preservesComp]
+
+/-! ## Natural Transformation Post-composition with Functor -/
+
+/--
+Post-composition of a natural transformation with a functor:
+given η : F ⇒ G with F, G : C → D and K : D → E,
+we get Kη : K∘F ⇒ K∘G with component K(η_X).
+-/
+def NaturalTransformation.postcomp {C D E : Category}
+    {F G : Functor C D} (η : F ⇒ G) (K : Functor D E) :
+    Functor.comp F K ⇒ Functor.comp G K where
+  component X := K.mapHom (η.component X)
+  naturality {X Y} f := by
+    have h := η.naturality f
+    simp [← K.preservesComp, h, K.preservesComp]
+
+/-! ## #eval Examples -/
+
+/-- Singleton functor: X → {X}. -/
+def singletonFunctor : Functor SetCat SetCat where
+  mapObj X := X
+  mapHom f x := f x
+  preservesId _ := rfl
+  preservesComp _ _ := rfl
+
 #eval "Core.Basic: NaturalTransformation F ⇒ G, vertical composition, shared functors"
+#eval "natTrans_ext: equality determined by components"
+#eval "NaturalTransformation.precomp and postcomp operations defined"

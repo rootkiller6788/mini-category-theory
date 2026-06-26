@@ -75,6 +75,46 @@ structure SetQuotientData (F : Functor SetCat SetCat) where
   respectsMap : ∀ {X Y : Type} (f : X → Y) (a b : F.mapObj X),
     rel X a b → rel Y (F.mapHom f a) (F.mapHom f b)
 
+/-! ## Epimorphism-Monomorphism Factorization -/
+
+/--
+An epi-mono factorization of a natural transformation η : F ⇒ G:
+there exists a functor H and natural transformations ε : F ⇒ H (epic)
+and μ : H ⇒ G (monic) such that η = μ ∘ ε.
+-/
+structure NatTransFactorization {C D : Category} {F G : Functor C D}
+    (η : F ⇒ G) where
+  H : Functor C D
+  epsilon : F ⇒ H
+  mu : H ⇒ G
+  epsilon_epic : isPointwiseEpic epsilon
+  mu_monic : isPointwiseMonic mu
+  factorization : NaturalTransformation.vcomp mu epsilon = η
+
+/--
+In SetCat, every natural transformation has an image factorization:
+F → Im(η) → G where Im(η)(X) = {g ∈ G(X) | ∃ f ∈ F(X), η_X(f) = g}.
+-/
+def imageSubfunctor {C : Category} {F G : Functor C SetCat}
+    (η : F ⇒ G) : SetSubfunctor G where
+  pred X y := ∃ (x : F.mapObj X), η.component X x = y
+  closedUnderMap {X Y} f y h := by
+    rcases h with ⟨x, hx⟩
+    have hnat := congrFun (η.naturality f) x
+    simp at hnat
+    refine ⟨F.mapHom f x, ?_⟩
+    rw [hnat, hx]
+
+/--
+A quotient by equivalence relation in SetCat produces a functor.
+Given set quotient data Q on F, define QFunctor : SetCat → SetCat
+by QFunctor(X) = F(X)/~_X.
+-/
+structure QuotientFunctorFromSet (F : Functor SetCat SetCat) where
+  Q : Functor SetCat SetCat
+  proj : F ⇒ Q
+  surjective : ∀ (X : Type) (q : Q.mapObj X), ∃ (x : F.mapObj X), proj.component X x = q
+
 /-! ## #eval Examples -/
 
 /-- The reverse relation: two lists are equivalent if one is the reverse of the other. -/
@@ -86,6 +126,12 @@ def idIsPointwiseEpic : isPointwiseEpic (NaturalTransformation.id listFunctor) :
   simp [NaturalTransformation.id] at h
   exact h
 
+/-- The Image subfunctor of the identity on lists (entire range). -/
+def idImageSubfunctor : SetSubfunctor listFunctor :=
+  imageSubfunctor (NaturalTransformation.id listFunctor)
+
 #eval "Constructions.Quotients: isEpicNatTrans, isPointwiseEpic, pointwiseEpic_implies_epic, QuotientFunctorData, SetQuotientData"
+#eval "NatTransFactorization, imageSubfunctor, QuotientFunctorFromSet"
 #eval s!"Identity is both monic and epic in SetCat (hence iso)"
 #eval reverseEquiv Nat [1,2,3] [3,2,1]
+#eval s!"Image subfunctor of id_F = F (entire range)"

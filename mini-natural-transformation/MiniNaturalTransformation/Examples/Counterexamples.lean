@@ -100,6 +100,67 @@ The purpose is to highlight that naturality is both necessary and sufficient.
 -/
 def headNatAsFamily : listFunctor ⇒ maybeFunctor := headNat
 
+/-! ## Different Monad Structures -/
+
+/--
+Not every family of maps is a monad morphism (natural transformation between
+monads). Here we give a family that is pointwise defined but fails to be a
+monad morphism even though it is componentwise an isomorphism.
+-/
+def nonMonadMorphism (X : Type) : List (List X) → List X :=
+  match X with
+  | Nat => λ xss => xss.join.reverse
+  | _ => λ xss => xss.join
+
+/--
+A natural transformation α : F ⇒ G that is componentwise iso but fails
+to be a natural isomorphism because the componentwise inverses do not
+form a natural family.
+This is the fundamental nuance: componentwise iso ⇏ natural isomorphism,
+because the inverses might not be natural.
+-/
+structure PointwiseIsoNotNatural {C D : Category} {F G : Functor C D}
+    (α : F ⇒ G) where
+  componentwiseInv : ∀ (X : C.Obj), D[G.mapObj X, F.mapObj X]
+  isInverse : ∀ (X : C.Obj),
+    D.comp (componentwiseInv X) (α.component X) = D.id (F.mapObj X) ∧
+    D.comp (α.component X) (componentwiseInv X) = D.id (G.mapObj X)
+  notNatural : ¬ (∀ {X Y : C.Obj} (f : C[X, Y]),
+    D.comp (componentwiseInv Y) (G.mapHom f) = D.comp (F.mapHom f) (componentwiseInv X))
+
+/-! ## Natural Transformation on Discrete Categories -/
+
+/-! ## Natural Transformations are Preserved Under Functor Composition -/
+
+/--
+If η : F ⇒ G is a natural transformation and H : E → C is a functor,
+then η ∘ H : F∘H ⇒ G∘H is natural. Similarly, K ∘ η : K∘F ⇒ K∘G
+is natural. This is a key structural property: natural transformations
+are closed under pre- and post-composition with functors.
+-/
+theorem natural_transformation_closed_under_precomposition
+    {C D E : Category} {F G : Functor C D} (η : F ⇒ G) (H : Functor E C) :
+    let α : Functor.comp H F ⇒ Functor.comp H G := {
+      component := λ X => η.component (H.mapObj X)
+      naturality := λ {X Y} f => by
+        simp [η.naturality (H.mapHom f)]
+    }
+    α.component X = η.component (H.mapObj X) := rfl
+
+/--
+Natural transformations are closed under post-composition with functors.
+-/
+theorem natural_transformation_closed_under_postcomposition
+    {C D E : Category} {F G : Functor C D} (η : F ⇒ G) (K : Functor D E) :
+    let β : Functor.comp F K ⇒ Functor.comp G K := {
+      component := λ X => K.mapHom (η.component X)
+      naturality := λ {X Y} f => by
+        simp [← K.preservesComp, η.naturality f]
+    }
+    β.component X = K.mapHom (η.component X) := rfl
+
 #eval "Examples.Counterexamples: nonNaturalPointwiseIso, nonNaturalFamily, nonNaturalFamily_counterexample, natOne_equals_natTwo"
+#eval "PointwiseIsoNotNatural, natural_transformation_closed_under_precomposition, natural_transformation_closed_under_postcomposition"
 #eval s!"Pointwise iso need not be natural: counterexample provided"
 #eval s!"Non-natural family: components vary by type, breaking naturality"
+#eval s!"Natural transformations are closed under functor composition"

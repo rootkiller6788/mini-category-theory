@@ -82,10 +82,56 @@ theorem vcomp_id_right {C D : Category} {F G : Functor C D} (α : F ⇒ G) :
     NaturalTransformation.vcomp α (NaturalTransformation.id F) = α := by
   funext X; simp [NaturalTransformation.vcomp, NaturalTransformation.id, D.id_comp, D.comp_id]
 
+/-! ## Double Whiskering -/
+
+/--
+Double whiskering (left-then-right): given α : F ⇒ G (C → D),
+H : B → C, K : D → E, we have K∘α∘H : K∘F∘H ⇒ K∘G∘H.
+-/
+def NaturalTransformation.whiskerBoth {B C D E : Category}
+    (H : Functor B C) {F G : Functor C D} (α : F ⇒ G) (K : Functor D E) :
+    Functor.comp (Functor.comp H F) K ⇒ Functor.comp (Functor.comp H G) K where
+  component X := K.mapHom (α.component (H.mapObj X))
+  naturality {X Y} f := by
+    simp [α.naturality (H.mapHom f), H.preservesComp, K.preservesComp]
+
+/-! ## Pre-post Composition Laws -/
+
+/--
+Pre-composition respects vertical composition:
+(β ∘ᵥ α) ∘ H = (β ∘ H) ∘ᵥ (α ∘ H).
+-/
+theorem precomp_vcomp {C D E : Category}
+    (H : Functor C D) {F G K : Functor D E} (α : F ⇒ G) (β : G ⇒ K) :
+    NaturalTransformation.precomp H (NaturalTransformation.vcomp β α) =
+    NaturalTransformation.vcomp (NaturalTransformation.precomp H β)
+      (NaturalTransformation.precomp H α) := by
+  funext X; rfl
+
+/--
+Post-composition respects vertical composition:
+K ∘ (β ∘ᵥ α) = (K ∘ β) ∘ᵥ (K ∘ α).
+-/
+theorem postcomp_vcomp {C D E : Category}
+    {F G K : Functor C D} (α : F ⇒ G) (β : G ⇒ K) (H : Functor D E) :
+    NaturalTransformation.postcomp (NaturalTransformation.vcomp β α) H =
+    NaturalTransformation.vcomp (NaturalTransformation.postcomp β H)
+      (NaturalTransformation.postcomp α H) := by
+  funext X; simp [NaturalTransformation.postcomp, NaturalTransformation.vcomp, H.preservesComp]
+
 /-! ## #eval Examples -/
 
 def idListNat : listFunctor ⇒ listFunctor := NaturalTransformation.id listFunctor
 
+/-- Identity composed with identity is identity (vertical composition unit law). -/
+def idVcompId : listFunctor ⇒ listFunctor :=
+  NaturalTransformation.vcomp (NaturalTransformation.id listFunctor) (NaturalTransformation.id listFunctor)
+
+/-- Verify: id ∘ id = id by the unit law. -/
+example : idVcompId = idListNat := by
+  funext X xs; simp [idVcompId, idListNat, NaturalTransformation.vcomp, NaturalTransformation.id]
+
 #eval "Core.Objects: NT.id, whiskerLeft, whiskerRight, componentAt, vcomp_id_left, vcomp_id_right"
+#eval "double whiskering: K∘α∘H, precomp_vcomp, postcomp_vcomp"
 #eval idListNat.component Nat ([1,2,3] : List Nat)
 #eval s!"Identity naturality verified: component at Nat = identity morphism on List Nat"

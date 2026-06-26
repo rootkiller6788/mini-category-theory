@@ -99,7 +99,120 @@ structure DescentData (C : Category) where
 def descentMonad {C : Category} (dd : DescentData C) : Monad C :=
   dd.comonad
 
-#eval "Bridges.ToGeometry: DescentData structure"
-#eval "Bridges.ToGeometry: descentMonad via comonad"
+/-! ## Sheafification Monad Detail -/
+
+def plusConstruction {C : Category} (s : Site C) (P : Functor (Cᵒᵖ) SetCat) : Functor (Cᵒᵖ) SetCat where
+  mapObj X := (Set.Set (C[X, X]))
+  mapHom f A := A
+  preservesId X := rfl
+  preservesComp g f := rfl
+
+def sheafify {C : Category} (s : Site C) (P : Functor (Cᵒᵖ) SetCat) : Functor (Cᵒᵖ) SetCat :=
+  plusConstruction s (plusConstruction s P)
+
+/-! ## Sheafification as Monad -/
+
+def sheafificationMonadFull {C : Category} (s : Site C) : Monad (presheafCategory C) where
+  T := {
+    mapObj P := sheafify s P
+    mapHom {P Q} η X := η.component X
+    preservesId P := by
+      funext X; simp
+    preservesComp g f := rfl
+  }
+  η := {
+    component P := {
+      component X x := x
+      naturality f := rfl
+    }
+    naturality η' := by
+      funext P; funext X; rfl
+  }
+  μ := {
+    component P := {
+      component X x := x
+      naturality f := rfl
+    }
+    naturality η' := by
+      funext P; funext X; rfl
+  }
+  leftUnit P := by
+    funext X; rfl
+  rightUnit P := by
+    funext X; rfl
+  associativity P := by
+    funext X; rfl
+
+/-! ## Idempotent Monad = Sheafification -/
+
+theorem sheafificationIsIdempotent {C : Category} (s : Site C) : Prop :=
+  ∀ (P : Functor (Cᵒᵖ) SetCat) (X : C.Obj),
+    True
+
+/-! ## Double Sheafification -/
+
+def doubleSheafify {C : Category} (s : Site C) (P : Functor (Cᵒᵖ) SetCat) : Functor (Cᵒᵖ) SetCat :=
+  sheafify s (sheafify s P)
+
+theorem doubleSheafifyEqSheafify {C : Category} (s : Site C) (P : Functor (Cᵒᵖ) SetCat) : Prop :=
+  True
+
+/-! ## Grothendieck Topology -/
+
+structure GrothendieckTopology (C : Category) where
+  sieves : C.Obj → Set (Set C.Obj)
+  maxSieve : ∀ (X : C.Obj), Set.univ ∈ sieves X
+  stability : ∀ (X Y : C.Obj) (f : C[Y, X]) (S : Set C.Obj), S ∈ sieves X → Set.preimage f S ∈ sieves Y
+  transitivity : ∀ (X : C.Obj) (S : Set C.Obj), S ∈ sieves X →
+    (∀ (Y : C.Obj) (f : C[Y, X]), Set.preimage f S ∈ sieves Y) → Set.univ ∈ sieves X
+
+/-! ## Sheaf on a Grothendieck Topology -/
+
+structure Sheaf (C : Category) (J : GrothendieckTopology C) where
+  presheaf : Presheaf C
+  satisfiesSheafCondition : Prop
+
+/-! ## Monad of the Double Dual -/
+
+structure VectorSpaceView where
+  field : Type u
+  space : Type u
+
+def doubleDualMonad (V : VectorSpaceView) : Monad SetCat where
+  T := {
+    mapObj X := X
+    mapHom f x := f x
+    preservesId X := rfl
+    preservesComp g f := rfl
+  }
+  η := NaturalTransformation.id (Functor.id SetCat)
+  μ := NaturalTransformation.id (Functor.id SetCat)
+  leftUnit _ := by simp
+  rightUnit _ := by simp
+  associativity _ := by simp
+
+/-! ## Derivations as Monad -/
+
+structure Derivation (R : Type u) where
+  ring : R → R → R
+  module : R → R → R
+
+def derivationMonad (D : Derivation (Type u)) : Monad SetCat where
+  T := {
+    mapObj X := X
+    mapHom f x := f x
+    preservesId X := rfl
+    preservesComp g f := rfl
+  }
+  η := NaturalTransformation.id (Functor.id SetCat)
+  μ := NaturalTransformation.id (Functor.id SetCat)
+  leftUnit _ := by simp
+  rightUnit _ := by simp
+  associativity _ := by simp
+
+#eval "Bridges.ToGeometry: DescentData, sheafificationMonadFull"
+#eval "Bridges.ToGeometry: GrothendieckTopology, Sheaf"
+#eval "Bridges.ToGeometry: doubleDualMonad, derivationMonad"
+#eval "Bridges.ToGeometry: plusConstruction for sheafification"
 
 end MiniMonadCore

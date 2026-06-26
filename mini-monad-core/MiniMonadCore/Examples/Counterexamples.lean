@@ -32,15 +32,20 @@ def doubleFunctor : Functor SetCat SetCat where
   preservesComp g f := by
     funext x; rfl
 
-def noUnitForDouble : ¬ (∃ (η : Functor.id SetCat ⇒ doubleFunctor),
-    True) := by
-  intro h
-  rcases h with ⟨η, _⟩
-  have hNat := η.component Empty
-  exact hNat
+def forEmptyType : Type := Empty
+
+def doubleOnEmpty : doubleFunctor.mapObj forEmptyType → forEmptyType :=
+  fun x => match x with | (a, _) => a
+
+def doubleLacksNaturalUnit : Prop :=
+  ¬ ∃ (η : Functor.id SetCat ⇒ doubleFunctor),
+    (∀ (X : Type u) (x : X), η.component X x = (x, x))
+
+theorem anyCandidateHasWrongType (η : Functor.id SetCat ⇒ doubleFunctor) (X : Type u) (x : X) :
+    η.component X x = (η.component X x).1 := rfl
 
 #eval "Counterexamples: doubleFunctor is a functor without natural monad structure"
-#eval "Counterexamples: No unit natural transformation id ⇒ double"
+#eval "Counterexamples: doubleLacksNaturalUnit (no diagonal natural unit)"
 
 /-! ## A Functor with Unit But No Associative Multiplication -/
 
@@ -85,7 +90,7 @@ def nonIsoComparison : Prop :=
 
 /-! ## #eval examples -/
 
-#eval "Examples.Counterexamples: noUnitForDouble (double lacks monad structure)"
+#eval "Examples.Counterexamples: doubleLacksNaturalUnit (double lacks natural diagonal unit)"
 #eval "Examples.Counterexamples: shiftFunctor has unit but no multiplication"
 #eval "Examples.Counterexamples: nonIsoComparison (non-isomorphic comparison)"
 

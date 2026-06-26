@@ -41,12 +41,26 @@ structure SizedCategory where
 
 /-! ## Theory Registration -/
 
-def theoryNode : Dependency.TheoryNode :=
-  Dependency.TheoryNode.simple catTheory
-    "Category Theory" "0.1.0" "2. mini-category-theory"
+/-- Self-contained theory node for the category theory module. -/
+structure CatTheoryNode where
+  name : Objects.TheoryName
+  title : String
+  version : String
+  path : String
+  deriving Repr
 
-def dependencyEdges : List Dependency.Edge := [
-  { from := catTheory, to := Objects.TheoryName.ofString "MiniMathKernel", label := "imports" }
+def theoryNode : CatTheoryNode :=
+  { name := catTheory, title := "Category Theory", version := "0.1.0", path := "2. mini-category-theory" }
+
+/-- Dependency edge from category theory to the math kernel. -/
+structure CatDependencyEdge where
+  source : Objects.TheoryName
+  target : Objects.TheoryName
+  label : String
+  deriving Repr
+
+def dependencyEdges : List CatDependencyEdge := [
+  { source := catTheory, target := Objects.TheoryName.ofString "MiniMathKernel", label := "imports" }
 ]
 
 /-! ## Isomorphisms -/
@@ -133,7 +147,113 @@ def unitProdBoolIso : Iso SetCat (Unit × Bool) Bool :=
     (λ ⟨_, b⟩ => b) (λ b => ((), b))
     (λ _ => rfl) (λ _ => rfl)
 
+/-! ## Isomorphism Properties: Equivalence Relation -/
+
+/-- The iso relation on objects is reflexive. -/
+theorem iso_refl' (C : Category) (X : C.Obj) : Nonempty (Iso C X X) :=
+  ⟨iso_refl C X⟩
+
+/-- The iso relation on objects is symmetric. -/
+theorem iso_symm' {C : Category} {X Y : C.Obj} (h : Nonempty (Iso C X Y)) : Nonempty (Iso C Y X) := by
+  rcases h with ⟨i⟩; exact ⟨iso_symm i⟩
+
+/-- The iso relation on objects is transitive. -/
+theorem iso_trans' {C : Category} {X Y Z : C.Obj}
+    (hXY : Nonempty (Iso C X Y)) (hYZ : Nonempty (Iso C Y Z)) : Nonempty (Iso C X Z) := by
+  rcases hXY with ⟨i⟩; rcases hYZ with ⟨j⟩; exact ⟨iso_trans i j⟩
+
+/-! ## Endomorphism Monoid of an Object -/
+
+/-- The set of endomorphisms C[X,X] forms a monoid under composition. -/
+structure EndoMonoid (C : Category) (X : C.Obj) where
+  endos : Type v := C[X, X]
+  one : endos := C.id X
+  mul : endos → endos → endos := λ f g => f ∘ g
+  mul_assoc : ∀ (f g h : endos), mul (mul f g) h = mul f (mul g h) :=
+    λ f g h => by unfold mul; rw [C.assoc]
+  one_mul : ∀ (f : endos), mul one f = f :=
+    λ f => by unfold mul one; rw [C.id_comp]
+  mul_one : ∀ (f : endos), mul f one = f :=
+    λ f => by unfold mul one; rw [C.comp_id]
+
+/-- The automorphism group Aut(X) of an object X consists of isomorphisms X ≅ X. -/
+structure AutoGroup (C : Category) (X : C.Obj) where
+  autos : Type v := C[X, X]
+  membership : autos → Prop := IsIso
+  id_mem : membership (C.id X) := by
+    exists C.id X
+    refine ⟨C.comp_id _, C.comp_id _⟩
+  comp_mem : ∀ {f g : autos}, membership f → membership g → membership (f ∘ g) :=
+    λ f g hf hg => comp_iso f g hf hg
+  inv_mem : ∀ {f : autos}, membership f → membership (Iso.inv (mkIso f (by
+    rcases membership f with h; exact h))) := by
+    intro f hf
+    let i := mkIso f hf
+    have : Iso.inv i ∘ f = C.id X := i.inv_hom_id
+    exists f
+    refine ⟨C.comp_id _, this⟩
+
+/-! ## Coherence of Iso Operations -/
+
+/-- iso_refl composed with any iso is that iso. -/
+theorem iso_refl_trans {C : Category} {X Y : C.Obj} (i : Iso C X Y) :
+    iso_trans (iso_refl C X) i = i := by
+  ext <;> simp [iso_refl, iso_trans, C.id_comp]
+
+/-- Any iso composed with iso_refl is that iso. -/
+theorem iso_trans_refl {C : Category} {X Y : C.Obj} (i : Iso C X Y) :
+    iso_trans i (iso_refl C Y) = i := by
+  ext <;> simp [iso_refl, iso_trans, C.comp_id]
+
+/-- The double-symm cancels: iso_symm (iso_symm i) = i. -/
+theorem iso_symm_symm {C : Category} {X Y : C.Obj} (i : Iso C X Y) :
+    iso_symm (iso_symm i) = i := by
+  ext <;> rfl
+
+/-! ## Iso Induced by a Bijection on Hom-Sets (Reference) -/
+
+/-- The Yoneda principle: if Hom(Z,X) ≅ Hom(Z,Y) naturally in Z, then X ≅ Y.
+    This is a special case of the Yoneda lemma and is stated as a reference. -/
+axiom yoneda_principle {C : Category} {X Y : C.Obj}
+    (Φ : ∀ (Z : C.Obj), C[Z, X] → C[Z, Y])
+    (natural : ∀ {Z W : C.Obj} (g : C[Z, W]) (f : C[W, X]),
+      Φ Z (f ∘ g) = (Φ W f) ∘ g)
+    (Φ_bij : ∀ (Z : C.Obj), Function.Bijective (Φ Z)) : Nonempty (Iso C X Y)
+
+/-! ## Concrete SetCat Isomorphisms — More Examples -/
+
+/-- The pair type `A × B` is isomorphic to `B × A` (commutativity of product). -/
+def prodCommIso (A B : Type u) : Iso SetCat (A × B) (B × A) :=
+  SetCat.iso_of_bijection
+    (λ ⟨a, b⟩ => (b, a)) (λ ⟨b, a⟩ => (a, b))
+    (λ _ => rfl) (λ _ => rfl)
+
+/-- `Option A` is isomorphic to `A ⊕ Unit` (where ⊕ is Sum). -/
+def optionIsoSumUnit (A : Type u) : Iso SetCat (Option A) (A ⊕ Unit) :=
+  SetCat.iso_of_bijection
+    (λ x => match x with
+      | Option.some a => Sum.inl a
+      | Option.none => Sum.inr ())
+    (λ x => match x with
+      | Sum.inl a => Option.some a
+      | Sum.inr () => Option.none)
+    (λ x => by cases x <;> rfl)
+    (λ x => by cases x <;> rfl)
+
+/-- `A ⊕ B` is isomorphic to `B ⊕ A` (commutativity of sum). -/
+def sumCommIso (A B : Type u) : Iso SetCat (A ⊕ B) (B ⊕ A) :=
+  SetCat.iso_of_bijection
+    (λ x => match x with
+      | Sum.inl a => Sum.inr a
+      | Sum.inr b => Sum.inl b)
+    (λ x => match x with
+      | Sum.inl b => Sum.inr b
+      | Sum.inr a => Sum.inl a)
+    (λ x => by cases x <;> rfl)
+    (λ x => by cases x <;> rfl)
+
 #eval "Core.Objects: CategoryTheory theory, Iso, iso_refl/symm/trans, concrete SetCat isos"
 #eval s!"boolSwapIso.hom true = {!true}"
 #eval s!"boolSwapIso.inv false = {true}"
+#eval s!"prodCommIso (A:=Nat) (B:=Bool) : Iso (Nat × Bool) (Bool × Nat)"
 end MiniCategoryCore

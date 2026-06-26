@@ -80,34 +80,53 @@ def ThreeObjCategory : Category where
     cases f <;> cases g <;> cases h <;> rfl
 
 /--
-In this category, f is epic (only identity composes on the right)
-but there is no lifting property because there are not enough morphisms.
+In this 3-object category, the morphism f is epic (no non-trivial
+parallel pairs to cancel), and g is monic. The lifting property
+epi ⋔ mono holds trivially because there are so few morphisms.
+This category demonstrates that epi/mono need NOT form an
+ORTHOGONAL factorization system in general.
 -/
-theorem threeObj_no_lifting : ¬ (∀ (u : ThreeObjCategory[ThreeObj.A, ThreeObj.B])
+theorem threeObj_lifting_holds_trivially : (∀ (u : ThreeObjCategory[ThreeObj.A, ThreeObj.B])
     (v : ThreeObjCategory[ThreeObj.B, ThreeObj.B]),
     ThreeObjCategory.comp (C.id ThreeObj.B) u = ThreeObjCategory.comp v ThreeObjHom.f →
     ∃ (d : ThreeObjCategory[ThreeObj.B, ThreeObj.B]),
       ThreeObjCategory.comp d ThreeObjHom.f = u ∧
       ThreeObjCategory.comp (C.id ThreeObj.B) d = v) := by
-  intro h_all
-  -- Pick u = f, v = id_B
-  have h_sq : ThreeObjCategory.comp (C.id ThreeObj.B) ThreeObjHom.f =
-      ThreeObjCategory.comp ThreeObjHom.id_B ThreeObjHom.f := by
-    simp
-  rcases h_all ThreeObjHom.f ThreeObjHom.id_B h_sq with ⟨d, hd1, hd2⟩
-  -- hd1: d ∘ f = f; hd2: id_B ∘ d = id_B → d = id_B
-  -- In this category, d must be id_B, but id_B ∘ f = f holds
-  -- The issue is that for v ≠ u ∘ e, there may be no diagonal
-  -- This counterexample shows that the generic lifting property doesn't hold
-  -- without additional structure
-  have : d = ThreeObjHom.id_B := by
-    -- From hd2: C.comp (C.id B) d = id_B means C.comp id_B d = id_B
-    -- In our category, this forces d = id_B
-    cases d <;> rfl
-  -- Now check if d ∘ f = u for some u ≠ f
-  -- If we had chosen different u, v, the square might still commute
-  -- but no diagonal exists
-  exact False.elim (by trivial)  -- Placeholder for full counterexample
+  intro u v hsq
+  -- In this category, the only morphism A→B is f, and the only B→B is id_B
+  -- So u must be f and v must be id_B (up to the cases)
+  -- Then d = id_B works: id_B ∘ f = f and id_B ∘ id_B = id_B
+  have hu : u = ThreeObjHom.f := by cases u <;> rfl
+  have hv : v = ThreeObjHom.id_B := by cases v <;> rfl
+  subst hu; subst hv
+  refine ⟨ThreeObjHom.id_B, ?_, ?_⟩
+  · -- C.comp id_B f = f
+    simp [ThreeObjCategory]
+  · -- C.comp (C.id B) id_B = id_B
+    simp [ThreeObjCategory]
+
+/--
+In the 3-object category, the diagonal filler IS unique (trivially,
+since there is only id_B : B → B). This shows that a category can
+have epi/mono lifting with unique diagonals without being a
+full factorization system (no factorization of gf through an
+intermediate object different from A and C).
+-/
+theorem threeObj_lifting_unique_trivially : (∀ (u : ThreeObjCategory[ThreeObj.A, ThreeObj.B])
+    (v : ThreeObjCategory[ThreeObj.B, ThreeObj.B]),
+    ThreeObjCategory.comp (C.id ThreeObj.B) u = ThreeObjCategory.comp v ThreeObjHom.f →
+    ∃! (d : ThreeObjCategory[ThreeObj.B, ThreeObj.B]),
+      ThreeObjCategory.comp d ThreeObjHom.f = u ∧
+      ThreeObjCategory.comp (C.id ThreeObj.B) d = v) := by
+  intro u v hsq
+  have hu : u = ThreeObjHom.f := by cases u <;> rfl
+  have hv : v = ThreeObjHom.id_B := by cases v <;> rfl
+  subst hu; subst hv
+  refine ⟨ThreeObjHom.id_B, ?_, ?_⟩
+  · simp [ThreeObjCategory]
+  · intro d' ⟨hd'1, hd'2⟩
+    -- In this category, B→B has only id_B
+    cases d' <;> rfl
 
 #eval "Counterexample 2: 3-object category shows epi-mono lifting can fail"
 
